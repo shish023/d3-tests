@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>D3 Test</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <style type="text/css">
+  body{
+    background-color: #262626;
+  }
+
+  svg{
+    border-color: rgba(228,234,242,1);
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  circle{
+    fill: rgba(228,234,242,0.6);
+
+  }
+
+  text{
+    fill: blue;
+  }
+
+  </style>
+</head>
+<body>
+
+  <script>
+
+    var zoom = d3.behavior.zoom()
+    .scaleExtent([1, 10])
+    .on("zoom", zoomed);
+
+    var viewWidth = Math.min(960, window.innerWidth);
+    var viewHeight = Math.min(500, window.innerHeight);
+
+    var svg = d3.select("body").append("svg")
+      .attr('width', viewWidth)
+      .attr('height', viewHeight)
+      .call(d3.behavior.zoom()
+        .scaleExtent([1, 15])
+        .on("zoom", function () {
+        svg.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")
+      }))
+      .append("g");
+
+    function type(d){
+      d.latitude = parseFloat(d.latitude);
+      d.longitude = parseFloat(d.longitude);
+
+      return(d);
+    }
+
+    function render(data){
+
+      var maxPopulation = d3.max(data, function(d) { return d.population; });
+
+      var latScale = d3.scale.linear()
+        .domain([90, -90])
+        .range([0, viewHeight]);
+
+      var longScale = d3.scale.linear()
+        .domain([-180, 180])
+        .range([0, viewWidth]);
+
+      var sizeScale = d3.scale.sqrt()
+        .domain([100000, maxPopulation])
+        .range([0.5, 2]);
+
+      var points = svg.selectAll("circle").data(data);
+
+      // Enter - static values assigned
+      points.enter().append("circle")
+        .attr('r', 1);
+
+      // Update - data values assigned
+      points
+        .attr('r', function(d){ return sizeScale(d.population); })
+        .attr('cx', function(d){ return longScale(d.longitude); })
+        .attr('cy', function(d){ return latScale(d.latitude); })
+        .on("mouseover", function(d) {
+          d3.select(this).style("fill", "white")
+          .attr('r', 10);
+        })
+        .on("mouseout", function(d) {
+          d3.select(this)
+          .style("fill", "rgba(228,234,242,0.6)")
+          .attr('r', function(d){ return sizeScale(d.population); });
+        });
+
+      // Exit
+      points.exit().remove();
+    }
+
+    d3.csv("processed_data.csv", type, render);
+
+
+
+
+    function zoomed() {
+      svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+    }
+
+  </script>
+</body>
+</html>
